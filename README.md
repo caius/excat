@@ -1,20 +1,18 @@
 # Excat
 
-**TODO: Add description**
+Implementation of `cat(1)` in [Elixir](http://elixir-lang.org). Ideally feature equivilent but might not be.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+1. Clone this repository
+2. Build the binary
 
-  1. Add excat to your list of dependencies in `mix.exs`:
+        mix escript.build
 
-        def deps do
-          [{:excat, "~> 0.0.1"}]
-        end
+3. Use `excat` as you would `cat`.
 
-  2. Ensure excat is started before your application:
+## See Also
 
-        def application do
-          [applications: [:excat]]
-        end
-
+* Golang - [Gocat](https://github.com/caius/gocat)
+* Ruby - [Rbcat](https://github.com/caius/rbcat)
+* Swift - [Swcat](https://github.com/caius/swcat)
