@@ -1,54 +1,51 @@
 defmodule Excat do
-  # No arguments passed means read from stdin
+  # No arguments means we read stdin
   def main([]) do
-    main(["-"])
+    {:ok, ["-"]} |> process_arguments
   end
 
-  # Arguments get treated as paths to files, and we ignore stdin
+  # Process arguments in turn
   def main(args) do
-    error = Enum.reduce(args, false, fn path, acc ->
-      if path == "-" || File.exists?(path) do
-        read_path(path)
-        acc
-      else
-        output_error(path)
-        true
-      end
-    end)
+    {:ok, args} |> process_arguments
+  end
 
-    exit_code = if error, do: 1, else: 0
+  # Process the next argument
+  def process_arguments({state, [path | remaining]}) do
+    case copy_file(path, File.exists?(path)) do
+      :ok ->
+        {state, remaining} |> process_arguments
+      :error ->
+        {:error, remaining} |> process_arguments
+    end
+  end
+
+  # Handle no arguments left by exiting
+  # Uses state to work out exit code
+  def process_arguments({state, []}) do
+    exit_code = if state == :ok, do: 0, else: 1
     exit({:shutdown, exit_code})
   end
 
-  def read_path("-") do
-    copy_from(:stdio)
+  # "-" means copy stdin to stdout
+  defp copy_file("-", _) do
+    IO.binstream(:stdio, :line) |> output
+    :ok
   end
 
-  def read_path(path) do
-    {:ok, h} = File.open(path, [:read])
-
-    case copy_from(h) do
-      :ok ->
-        File.close(h)
-
-      {:error, _} ->
-        output_error(path)
-    end
+  # Copy a file that exists to stdout
+  defp copy_file(path, true) do
+    File.stream!(path) |> output
+    :ok
   end
 
-  # Given a source, read a line from it and write to stdout
-  defp copy_from(source) do
-    case IO.binread(source, :line) do
-      :eof -> :ok
-      {:error, reason} -> {:error, reason}
-      data ->
-        IO.binwrite(data)
-        copy_from(source)
-    end
-  end
-
-  defp output_error(path) do
+  # Handle a file not existing, output error to stderr
+  defp copy_file(path, false) do
     IO.puts :stderr, "cat: #{path}: No such file or directory"
+    :error
   end
 
+  # Output every line from stream to stdout
+  defp output(stream) do
+    stream |> Enum.each(&IO.write(:stdio, &1))
+  end
 end
